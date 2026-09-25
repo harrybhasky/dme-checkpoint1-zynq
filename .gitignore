@@ -1,0 +1,32 @@
+# Vivado
+.Xil/
+*.jou
+*.log
+*.str
+*.ltx
+*.wdb
+*.runs/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.gen/
+*.sdk/
+*.spr
+*.pdi
+*.bit
+*.bin
+
+# Vitis and generated build output
+Debug/
+Release/
+workspace/
+platform/
+
+# Simulation output
+*.vvp
+*.vcd
+*.fst
+
+# macOS
+.DS_Store
