@@ -25,7 +25,10 @@ enum {
     DME_RX_REG_PULSE_COUNT = 0x34,
     DME_RX_REG_REJECT_COUNT = 0x38,
     DME_RX_REG_LAST_WIDTH = 0x3C,
-    DME_RX_REG_LAST_SPACING = 0x40
+    DME_RX_REG_LAST_SPACING = 0x40,
+    DME_RX_REG_TX_TIMESTAMP = 0x44,
+    DME_RX_REG_PAIR_DELAY = 0x48,
+    DME_RX_REG_TX_COUNT = 0x4C
 };
 
 enum {
@@ -66,6 +69,10 @@ void dme_rx_set_spacing_window_us(const dme_rx_device_t *device,
 uint32_t dme_rx_read_status(const dme_rx_device_t *device);
 uint32_t dme_rx_read_timestamp(const dme_rx_device_t *device);
 int dme_rx_pop_pair(const dme_rx_device_t *device, uint32_t *timestamp);
+int dme_rx_pop_pair_delay(const dme_rx_device_t *device, uint32_t *timestamp,
+                          uint32_t *delay);
+uint32_t dme_rx_read_tx_timestamp(const dme_rx_device_t *device);
+uint32_t dme_rx_read_tx_count(const dme_rx_device_t *device);
 uint32_t dme_rx_read_pair_count(const dme_rx_device_t *device);
 uint32_t dme_rx_read_pulse_count(const dme_rx_device_t *device);
 uint32_t dme_rx_read_reject_count(const dme_rx_device_t *device);

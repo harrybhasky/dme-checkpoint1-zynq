@@ -31,6 +31,22 @@ Vivado integration steps, and validation procedure.
 See [`checkpoint2/README.md`](checkpoint2/README.md) for the receiver
 algorithm, register map, Vivado integration steps, and simulation procedure.
 
+### Checkpoint 3: Ground station with delay and distance model
+
+- DME test equipment IP: decodes interrogations with the checkpoint 2
+  receiver and replies with a 50 us transponder delay plus the round trip
+- Distance model from 10 to 200 NM, with aircraft velocity towards or away
+  from the station
+- Reply queue for several replies in flight, and configurable reply
+  efficiency
+- Aircraft-side TX correlation, zero-range calibration and range tracking
+  in software
+- Self-checking end-to-end simulation (aircraft TX → ground station →
+  aircraft RX)
+
+See [`checkpoint3/README.md`](checkpoint3/README.md) for the timing
+algorithm, register map, Vivado integration steps, and simulation procedure.
+
 ## Layout
 
 ```text
@@ -41,4 +57,8 @@ checkpoint2/
 ├── rtl/       Receiver/detector SystemVerilog cores and testbench
 ├── sim/       Icarus Verilog simulation runner
 └── software/  Receiver bare-metal C driver and example application
+checkpoint3/
+├── rtl/       Ground station core, range model and end-to-end testbench
+├── sim/       Icarus Verilog simulation runner
+└── software/  Ground station driver, range conversions and demo application
 ```

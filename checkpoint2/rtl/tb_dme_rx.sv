@@ -25,6 +25,8 @@ module tb_dme_rx;
     localparam logic [6:0] REG_REJECT_COUNT = 7'h38;
     localparam logic [6:0] REG_LAST_WIDTH   = 7'h3C;
     localparam logic [6:0] REG_LAST_SPACING = 7'h40;
+    localparam logic [6:0] REG_PAIR_DELAY   = 7'h48;
+    localparam logic [6:0] REG_TX_COUNT     = 7'h4C;
 
     logic clk = 1'b0;
     logic rst_n = 1'b0;
@@ -129,6 +131,7 @@ module tb_dme_rx;
         .loopback_sample(tx_modulated),
         .adc_sample(adc_sample),
         .adc_sample_valid(adc_sample_valid),
+        .tx_envelope(tx_envelope),
         .envelope_out(envelope),
         .pulse_detected(pulse_detected),
         .pair_detected(pair_detected),
@@ -204,6 +207,11 @@ module tb_dme_rx;
         axi_read(REG_LAST_WIDTH, value);
         $display("INFO  A measured pulse width = %0d cycles (%0.2f us)",
                  value, real'(value) / CLOCKS_PER_US);
+        axi_read(REG_TX_COUNT, value);     expect_eq("A TX pairs tapped", value, 6);
+        // Loopback has no range delay: what remains is the receiver's
+        // latency from the TX half-amplitude point to the detected edge.
+        axi_read(REG_PAIR_DELAY, value);
+        expect_near("A TX-to-RX delay (cycles)", value, 67, 10);
         if (!irq) begin
             $display("INFO  irq low as expected (irq disabled)");
         end

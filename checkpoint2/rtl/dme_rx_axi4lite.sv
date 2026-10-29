@@ -5,6 +5,10 @@
 //
 // Input is either the checkpoint 1 modulated_out (digital loopback, one
 // sample per clock) or an ADC sample stream (milestone 4), chosen in CONTROL.
+//
+// Checkpoint 3 adds transmit correlation: tx_envelope (checkpoint 1
+// pulse_envelope_out) marks when each interrogation pair is sent, and every
+// detected pair is stored with its delay from the latest earlier interrogation.
 module dme_rx_axi4lite #(
     parameter int unsigned CLK_HZ                  = 100_000_000,
     parameter int unsigned DEFAULT_ENV_SHIFT       = 7,
@@ -14,7 +18,9 @@ module dme_rx_axi4lite #(
     parameter int unsigned DEFAULT_WIDTH_MAX_US    = 40,
     parameter int unsigned DEFAULT_SPACING_MIN_US  = 395,
     parameter int unsigned DEFAULT_SPACING_MAX_US  = 405,
-    parameter int unsigned FIFO_DEPTH_LOG2         = 4
+    parameter int unsigned FIFO_DEPTH_LOG2         = 4,
+    // Half of the checkpoint 1 raised-cosine peak (32767)
+    parameter int unsigned TX_REF_LEVEL            = 16384
 ) (
     input  logic        s_axi_aclk,
     input  logic        s_axi_aresetn,
@@ -41,6 +47,8 @@ module dme_rx_axi4lite #(
     // ADC sample stream, signed 16-bit (tie off until milestone 4)
     input  logic signed [15:0] adc_sample,
     input  logic               adc_sample_valid,
+    // Transmit envelope from dme_axi4lite/pulse_envelope_out (0 if unused)
+    input  logic [15:0]        tx_envelope,
 
     output logic [15:0] envelope_out,
     output logic        pulse_detected,
@@ -67,6 +75,9 @@ module dme_rx_axi4lite #(
     localparam logic [4:0] REG_REJECT_COUNT = 5'h0E;
     localparam logic [4:0] REG_LAST_WIDTH   = 5'h0F;
     localparam logic [4:0] REG_LAST_SPACING = 5'h10;
+    localparam logic [4:0] REG_TX_TIMESTAMP = 5'h11;
+    localparam logic [4:0] REG_PAIR_DELAY   = 5'h12;
+    localparam logic [4:0] REG_TX_COUNT     = 5'h13;
 
     function automatic logic [31:0] apply_wstrb(input logic [31:0] old_value,
                                                 input logic [31:0] new_value,
@@ -105,8 +116,16 @@ module dme_rx_axi4lite #(
     logic [31:0] wdata_reg;
     logic [3:0]  wstrb_reg;
 
-    // Pair timestamp FIFO
+    // Transmit pair tap
+    logic        tx_above;
+    logic        tx_seen;
+    logic [31:0] tx_ts;
+    logic [31:0] tx_ts_prev;
+    logic [31:0] tx_count;
+
+    // Pair timestamp FIFO, with the TX-to-RX delay of each pair alongside
     logic [31:0]              fifo_mem [0:FIFO_DEPTH-1];
+    logic [31:0]              delay_mem [0:FIFO_DEPTH-1];
     logic [FIFO_DEPTH_LOG2:0] fifo_wr_ptr;
     logic [FIFO_DEPTH_LOG2:0] fifo_rd_ptr;
     wire  [FIFO_DEPTH_LOG2:0] fifo_count = fifo_wr_ptr - fifo_rd_ptr;
@@ -120,6 +139,16 @@ module dme_rx_axi4lite #(
     logic [31:0] pair_timestamp;
     logic [31:0] pair_spacing;
     logic [31:0] last_width;
+
+    // An upward crossing of TX_REF_LEVEL starts a new interrogation unless it
+    // is the second pulse, which follows within the pair spacing window.
+    wire tx_cross    = (tx_envelope >= TX_REF_LEVEL) && !tx_above;
+    wire tx_start    = tx_cross && (!tx_seen || timestamp - tx_ts > spacing_max_reg);
+    // A pair is matched to the latest interrogation sent before its first
+    // pulse. The previous one is used when a new interrogation went out
+    // while the reply was still being received.
+    wire [31:0] pair_delay = ($signed(pair_timestamp - tx_ts) >= 0) ?
+                             pair_timestamp - tx_ts : pair_timestamp - tx_ts_prev;
 
     wire signed [15:0] rx_sample       = adc_select_reg ? adc_sample : loopback_sample;
     wire               rx_sample_valid = adc_select_reg ? adc_sample_valid : 1'b1;
@@ -179,6 +208,25 @@ module dme_rx_axi4lite #(
             timestamp <= timestamp + 1'b1;
     end
 
+    always_ff @(posedge s_axi_aclk) begin
+        if (!s_axi_aresetn || clear_pulse || !enable_reg) begin
+            tx_above   <= 1'b0;
+            tx_seen    <= 1'b0;
+            tx_ts      <= 32'd0;
+            tx_ts_prev <= 32'd0;
+            if (!s_axi_aresetn || clear_pulse)
+                tx_count <= 32'd0;
+        end else begin
+            tx_above <= (tx_envelope >= TX_REF_LEVEL);
+            if (tx_start) begin
+                tx_seen    <= 1'b1;
+                tx_ts      <= timestamp;
+                tx_ts_prev <= tx_ts;
+                tx_count   <= tx_count + 1'b1;
+            end
+        end
+    end
+
     // Counters and FIFO
     always_ff @(posedge s_axi_aclk) begin
         if (!s_axi_aresetn || clear_pulse) begin
@@ -195,7 +243,8 @@ module dme_rx_axi4lite #(
             if (pair_valid && fifo_full) fifo_overflow <= 1'b1;
 
             if (fifo_push) begin
-                fifo_mem[fifo_wr_ptr[FIFO_DEPTH_LOG2-1:0]] <= pair_timestamp;
+                fifo_mem[fifo_wr_ptr[FIFO_DEPTH_LOG2-1:0]]  <= pair_timestamp;
+                delay_mem[fifo_wr_ptr[FIFO_DEPTH_LOG2-1:0]] <= pair_delay;
                 fifo_wr_ptr <= fifo_wr_ptr + 1'b1;
             end
             if (fifo_pop)
@@ -263,7 +312,8 @@ module dme_rx_axi4lite #(
                     REG_SPACING_MAX: spacing_max_reg <= apply_wstrb(spacing_max_reg, wdata_reg, wstrb_reg);
                     REG_STATUS, REG_TIMESTAMP, REG_PAIR_FIFO, REG_PAIR_COUNT,
                     REG_PULSE_COUNT, REG_REJECT_COUNT, REG_LAST_WIDTH,
-                    REG_LAST_SPACING: ; // read-only
+                    REG_LAST_SPACING, REG_TX_TIMESTAMP, REG_PAIR_DELAY,
+                    REG_TX_COUNT: ; // read-only
                     default: s_axi_bresp <= 2'b10;
                 endcase
                 aw_pending   <= 1'b0;
@@ -297,6 +347,10 @@ module dme_rx_axi4lite #(
                     REG_REJECT_COUNT: s_axi_rdata <= reject_count;
                     REG_LAST_WIDTH:   s_axi_rdata <= last_width;
                     REG_LAST_SPACING: s_axi_rdata <= pair_spacing;
+                    REG_TX_TIMESTAMP: s_axi_rdata <= tx_ts;
+                    REG_PAIR_DELAY:   s_axi_rdata <= fifo_empty ? 32'd0 :
+                                                     delay_mem[fifo_rd_ptr[FIFO_DEPTH_LOG2-1:0]];
+                    REG_TX_COUNT:     s_axi_rdata <= tx_count;
                     default: begin
                         s_axi_rdata <= 32'd0;
                         s_axi_rresp <= 2'b10;

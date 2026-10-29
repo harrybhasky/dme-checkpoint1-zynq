@@ -55,6 +55,13 @@ matching points on identical pulses, so it stays at exactly 400 us.
 | 0x38 | REJECT_COUNT | RO | pulses with an invalid width |
 | 0x3C | LAST_WIDTH | RO | width of the last pulse, cycles |
 | 0x40 | LAST_SPACING | RO | spacing of the last pair, cycles |
+| 0x44 | TX_TIMESTAMP | RO | timestamp of the latest interrogation sent (checkpoint 3) |
+| 0x48 | PAIR_DELAY | RO | delay from interrogation to the oldest FIFO pair, cycles; read before popping PAIR_FIFO (checkpoint 3) |
+| 0x4C | TX_COUNT | RO | interrogations sent (checkpoint 3) |
+
+Checkpoint 3 added the last three registers and a `tx_envelope` input
+(connect `dme_axi4lite/pulse_envelope_out`, or tie to 0). See
+[`../checkpoint3/README.md`](../checkpoint3/README.md).
 
 The default thresholds suit the loopback signal. The DDS sine is 15-bit
 (±16383), so the mean rectified envelope at the pulse peak is about 10,400.

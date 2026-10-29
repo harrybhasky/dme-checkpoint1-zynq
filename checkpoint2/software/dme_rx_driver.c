@@ -115,6 +115,29 @@ int dme_rx_pop_pair(const dme_rx_device_t *device, uint32_t *timestamp)
     return 1;
 }
 
+/* Like dme_rx_pop_pair, and also returns the cycles from the latest
+ * interrogation sent before the pair to the pair's first pulse. The delay
+ * must be read before the FIFO is popped. */
+int dme_rx_pop_pair_delay(const dme_rx_device_t *device, uint32_t *timestamp,
+                          uint32_t *delay)
+{
+    if (dme_rx_read_status(device) & DME_RX_STATUS_FIFO_EMPTY)
+        return 0;
+    *delay = dme_rx_read(device, DME_RX_REG_PAIR_DELAY);
+    *timestamp = dme_rx_read(device, DME_RX_REG_PAIR_FIFO);
+    return 1;
+}
+
+uint32_t dme_rx_read_tx_timestamp(const dme_rx_device_t *device)
+{
+    return dme_rx_read(device, DME_RX_REG_TX_TIMESTAMP);
+}
+
+uint32_t dme_rx_read_tx_count(const dme_rx_device_t *device)
+{
+    return dme_rx_read(device, DME_RX_REG_TX_COUNT);
+}
+
 uint32_t dme_rx_read_pair_count(const dme_rx_device_t *device)
 {
     return dme_rx_read(device, DME_RX_REG_PAIR_COUNT);
