@@ -30,3 +30,10 @@ platform/
 
 # macOS
 .DS_Store
+
+# Checkpoint 4 generated output (Vivado project, bitstream/.xsa, Vitis
+# workspace, simulation)
+checkpoint4/vivado/dme_final/
+checkpoint4/vivado/output/
+checkpoint4/vitis/workspace/
+checkpoint4/sim/build/

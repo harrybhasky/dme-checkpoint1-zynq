@@ -47,6 +47,30 @@ algorithm, register map, Vivado integration steps, and simulation procedure.
 See [`checkpoint3/README.md`](checkpoint3/README.md) for the timing
 algorithm, register map, Vivado integration steps, and simulation procedure.
 
+### Checkpoint 4: Final project with the course ground station IP
+
+All six project requirements: distance and speed, static and flying
+towards/away, at 60% reply efficiency, with squitter up to 2500 pps.
+
+- Aircraft DME connected directly to the course `groundStation` IP in the
+  same FPGA
+- New interrogator: 7 us half-sine pulses, 12 us apart, 10 MHz carrier,
+  12-bit samples, random PRF jitter
+- Checkpoint 2 receiver cores retuned for the station's replies, a
+  reply-delay FIFO with a range gate
+- AXI control of every ground station input (distance, speed, direction,
+  efficiency, squitter, jitter)
+- Software: delay-histogram tracker that rejects squitter, speed from the
+  station's 1 km steps, calibration, UART commands and one-key test cases
+  for each requirement
+- Self-checking simulation against the unmodified course IP (including
+  squitter and motion), plus PC tests of the tracker for every requirement
+- One-command Vivado build (any version from 2020.1) and XSCT scripts to
+  build and run the software
+
+**Building it on the board: [`checkpoint4/BUILD.md`](checkpoint4/BUILD.md).**
+Design details: [`checkpoint4/README.md`](checkpoint4/README.md).
+
 ## Layout
 
 ```text
@@ -61,4 +85,11 @@ checkpoint3/
 ├── rtl/       Ground station core, range model and end-to-end testbench
 ├── sim/       Icarus Verilog simulation runner
 └── software/  Ground station driver, range conversions and demo application
+checkpoint4/
+├── ip/        Course ground station IP (as provided, Vivado 2022.2)
+├── rtl/       Interrogator TX, aircraft and station-control AXI IPs, PL system, testbench
+├── sim/       Icarus runner, Xilinx core models, pulse ROM generator
+├── software/  Drivers, tracker (dme_track.c), application; test/ PC tests
+├── vivado/    build_project.tcl: project, block design, bitstream, .xsa
+└── vitis/     build_app.tcl and run_on_board.tcl (XSCT)
 ```
