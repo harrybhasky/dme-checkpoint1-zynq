@@ -256,8 +256,9 @@ static int replay(int argc, char **argv)
     fclose(f);
 
     /* Simulated time is compressed: blocks are 10 interrogations, so the
-     * first one and one split by a step may have too few replies. */
-    check("replay: blocks with a distance", valid, blocks - 2, blocks);
+     * first, the last (partial) and one split by a step may have too few
+     * replies. */
+    check("replay: blocks with a distance", valid, blocks - 3, blocks);
     check("replay: final distance (m)", last_d, expect_m - 12.0, expect_m + 12.0);
     if (have_v) {
         check("replay: speed from step timing", v_valid && steps, 1, 1);
