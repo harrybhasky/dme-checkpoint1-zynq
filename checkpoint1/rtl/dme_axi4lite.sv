@@ -26,9 +26,14 @@ module dme_axi4lite #(
     output logic [1:0]  s_axi_rresp,
     output logic        s_axi_rvalid,
     input  logic        s_axi_rready,
-    output logic        pulse_pair,
-    output logic        carrier,
-    output logic        modulated_out
+    
+    // AXI-Stream interface to receive carrier from Xilinx DDS IP
+    input  logic [15:0] s_axis_carrier_tdata,
+    input  logic        s_axis_carrier_tvalid,
+    
+    // New 16-bit outputs for raised cosine and DAC
+    output logic [15:0]        pulse_envelope_out,
+    output logic signed [15:0] modulated_out
 );
     localparam logic [31:0] MIN_PERIOD_US =
         PULSE_WIDTH_US + INTER_PULSE_DELAY_US + PULSE_WIDTH_US;
@@ -59,10 +64,11 @@ module dme_axi4lite #(
         .enable(enable_reg),
         .carrier_enable(carrier_enable_reg),
         .pair_period_us(period_reg),
-        .elapsed_us,
-        .pulse_pair,
-        .carrier,
-        .modulated_out
+        .s_axis_carrier_tdata(s_axis_carrier_tdata),
+        .s_axis_carrier_tvalid(s_axis_carrier_tvalid),
+        .elapsed_us(elapsed_us),
+        .pulse_envelope_out(pulse_envelope_out),
+        .modulated_out(modulated_out)
     );
 
     always_ff @(posedge s_axi_aclk) begin
@@ -120,7 +126,7 @@ module dme_axi4lite #(
                 case (s_axi_araddr[5:2])
                     4'h0: s_axi_rdata <= {30'd0, carrier_enable_reg, enable_reg};
                     4'h1: s_axi_rdata <= period_reg;
-                    4'h2: s_axi_rdata <= {30'd0, (enable_reg && pulse_pair), pulse_pair};
+                    4'h2: s_axi_rdata <= {16'd0, pulse_envelope_out}; // Provide envelope amplitude in status reg
                     4'h3: s_axi_rdata <= elapsed_us;
                     default: begin
                         s_axi_rdata <= 32'd0;
