@@ -17,8 +17,8 @@ enum {
 enum {
     DME_CONTROL_ENABLE = 1u << 0,
     DME_CONTROL_CARRIER_ENABLE = 1u << 1,
-    DME_STATUS_PULSE_ACTIVE = 1u << 0,
-    DME_STATUS_GENERATOR_ACTIVE = 1u << 1
+    /* STATUS [15:0]: current pulse envelope (0 between pulses, peak 32767) */
+    DME_STATUS_ENVELOPE_MASK = 0xFFFFu
 };
 
 void dme_init(dme_device_t *device, uintptr_t base_address);

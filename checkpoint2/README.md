@@ -76,7 +76,7 @@ about 50% and 40% of the received envelope.
 
 This needs Icarus Verilog 12. The testbench (`rtl/tb_dme_rx.sv`) uses the
 real checkpoint 1 modulator from
-`checkpoint1/checkpoint1.srcs/sources_1/imports/rtl/` (override with
+`checkpoint1/rtl/` (override with
 `TX_RTL=...`) and a behavioural 1 MHz DDS. It checks:
 
 - Loopback: 6 pairs in 5.5 ms at a 1000 us period, 0 rejects, spacing of

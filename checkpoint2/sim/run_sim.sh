@@ -4,7 +4,7 @@
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
-TX_RTL=${TX_RTL:-$ROOT/checkpoint1/checkpoint1.srcs/sources_1/imports/rtl/dme_pulse_pair_modulator.sv}
+TX_RTL=${TX_RTL:-$ROOT/checkpoint1/rtl/dme_pulse_pair_modulator.sv}
 OUT=${OUT:-$HERE/build}
 
 mkdir -p "$OUT"

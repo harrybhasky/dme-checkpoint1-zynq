@@ -5,7 +5,7 @@
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
-TX_RTL=${TX_RTL:-$ROOT/checkpoint1/checkpoint1.srcs/sources_1/imports/rtl/dme_pulse_pair_modulator.sv}
+TX_RTL=${TX_RTL:-$ROOT/checkpoint1/rtl/dme_pulse_pair_modulator.sv}
 RX_RTL=${RX_RTL:-$ROOT/checkpoint2/rtl}
 OUT=${OUT:-$HERE/build}
 

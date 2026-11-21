@@ -71,12 +71,21 @@ towards/away, at 60% reply efficiency, with squitter up to 2500 pps.
 **Building it on the board: [`checkpoint4/BUILD.md`](checkpoint4/BUILD.md).**
 Design details: [`checkpoint4/README.md`](checkpoint4/README.md).
 
+## Report and handoff
+
+- [`REPORT.md`](REPORT.md): architecture, algorithms, resources, Fmax,
+  throughput, verification.
+- [`HANDOFF.md`](HANDOFF.md): what is verified and the remaining steps that
+  need Vivado/Vitis and the board.
+
 ## Layout
 
 ```text
 checkpoint1/
-├── rtl/       Transmitter SystemVerilog core, AXI4-Lite wrapper, and testbench
-└── software/  Transmitter bare-metal C driver and example application
+├── rtl/       Transmitter core, AXI4-Lite wrapper (board version), testbench
+├── sim/       Icarus Verilog simulation runner
+├── software/  Transmitter bare-metal C driver and example application
+└── checkpoint1.xpr, .srcs/, .xsa   Vivado 2020.1 project, packaged IP, platform
 checkpoint2/
 ├── rtl/       Receiver/detector SystemVerilog cores and testbench
 ├── sim/       Icarus Verilog simulation runner
